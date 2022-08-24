@@ -23,7 +23,7 @@ curl -X POST localhost:8081/user \
 ```
 curl -X GET localhost:8081/dashboard \
    -H 'Content-Type: application/json' \
-   -d '{"user":{"name":"user2"}}'
+   -d '{"user":{"name":"user1"}}'
 ```
 
 ## Output:
