@@ -3,7 +3,6 @@ package og2
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"hunter.io/og2/internal/og2/game"
@@ -11,10 +10,10 @@ import (
 )
 
 type Handler struct {
-	sessions *Sessions
+	sessions Sessions
 }
 
-func NewHandler(sessions *Sessions) *Handler {
+func NewHandler(sessions Sessions) *Handler {
 	return &Handler{
 		sessions: sessions,
 	}
@@ -26,17 +25,21 @@ func (h *Handler) Route(router *chi.Mux) {
 
 func (h *Handler) HandleUser() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		decoder := json.NewDecoder(r.Body)
-
 		var user game.User
-		if err := decoder.Decode(&user); err != nil {
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session := h.sessions.Create(user)
-		if session == nil {
-			http.Error(rw, "could not create session", http.StatusInternalServerError)
+		err := h.sessions.Create(user)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session, err := h.sessions.Get(user)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -46,8 +49,6 @@ func (h *Handler) HandleUser() http.HandlerFunc {
 			return
 		}
 
-		fmt.Println(string(b))
-
-		render.JSON(rw, r, bytes.NewBuffer(b))
+		render.JSON(rw, r, bytes.NewReader(b))
 	}
 }
