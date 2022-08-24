@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  og2:
+    build:
+      dockerfile: Dockerfile
+    volumes:
+      - data:/db/data
+    environment:
+      - OG2_VOLUME_PATH=/db/data
+    ports:
+      - "8081:8081"
+
+volumes:
+  data:
