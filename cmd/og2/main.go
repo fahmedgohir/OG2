@@ -27,6 +27,7 @@ func main() {
 		log.Panic(err)
 	}
 	sessions.Start()
+	defer sessions.Close()
 
 	router := chi.NewRouter()
 	router.Use(middleware.Logger)
@@ -41,12 +42,12 @@ func main() {
 		}
 	}()
 
+	fmt.Println("Server is running")
+
 	done := make(chan os.Signal, 1)
 	signal.Notify(done, os.Interrupt, syscall.SIGTERM)
 
 	<-done
-
-	sessions.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
