@@ -1,7 +1,6 @@
 package og2
 
 import (
-	"bytes"
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -22,6 +21,7 @@ func NewHandler(sessions Sessions) *Handler {
 func (h *Handler) Route(router *chi.Mux) {
 	router.Post("/user", h.HandleUser())
 	router.Get("/dashboard", h.HandleSession())
+	router.Post("/upgrade", h.HandleUpgrade())
 }
 
 func (h *Handler) HandleUser() http.HandlerFunc {
@@ -62,12 +62,35 @@ func (h *Handler) HandleSession() http.HandlerFunc {
 			return
 		}
 
-		b, err := json.Marshal(session)
+		render.JSON(rw, r, session)
+	}
+}
+
+func (h *Handler) HandleUpgrade() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var upgrade game.Upgrade
+		if err := json.NewDecoder(r.Body).Decode(&upgrade); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session, err := h.sessions.Get(upgrade.User)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		render.JSON(rw, r, bytes.NewReader(b))
+		session, err = session.Upgrade(upgrade.Factory)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := h.sessions.Set(session); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		render.JSON(rw, r, session)
 	}
 }

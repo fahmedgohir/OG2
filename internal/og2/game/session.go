@@ -1,9 +1,17 @@
 package game
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type User struct {
 	Name string `json:"name"`
+}
+
+type Upgrade struct {
+	User    User     `json:"user"`
+	Factory Resource `json:"factory"`
 }
 
 type Resources struct {
@@ -33,4 +41,9 @@ func (s Session) Update() Session {
 
 	s.LastUpdated = currentTime
 	return s
+}
+
+func (s Session) Upgrade(resource Resource) (Session, error) {
+	// Upgrade logic goes here
+	return s, fmt.Errorf("upgrades not implemented")
 }

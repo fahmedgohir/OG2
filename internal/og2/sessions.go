@@ -28,6 +28,7 @@ type Sessions interface {
 	Start()
 	Create(user game.User) error
 	Get(user game.User) (game.Session, error)
+	Set(session game.Session) error
 	Update() error
 	Close()
 }
@@ -193,13 +194,13 @@ func (s *sessions) Update() error {
 
 	for _, session := range sessions {
 		updated := session.Update()
-		s.update(updated)
+		s.Set(updated)
 	}
 
 	return nil
 }
 
-func (s *sessions) update(session game.Session) error {
+func (s *sessions) Set(session game.Session) error {
 	query := `
 		UPDATE sessions
 		SET name = $1, iron = $2, copper = $3, gold = $4, iron_level = $5, copper_level = $6, gold_level = $7, last_updated = $8
