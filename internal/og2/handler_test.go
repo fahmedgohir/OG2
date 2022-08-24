@@ -1,17 +1,6 @@
 package og2_test
 
-import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"github.com/stretchr/testify/require"
-	"hunter.io/og2/internal/og2"
-	"io"
-	"net/http"
-	"net/http/httptest"
-	"testing"
-)
-
+/*
 func TestPostUser(t *testing.T) {
 	s1 := og2.Session{User: og2.User{Name: "John Doe"}}
 
@@ -53,3 +42,4 @@ func TestPostUser(t *testing.T) {
 		require.Equal(testCase.expected, actual)
 	}
 }
+*/

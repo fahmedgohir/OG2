@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"hunter.io/og2/internal/og2/game"
 	"net/http"
 )
 
@@ -27,7 +28,7 @@ func (h *Handler) HandleUser() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var user User
+		var user game.User
 		if err := decoder.Decode(&user); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
