@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/kelseyhightower/envconfig"
 	"hunter.io/og2/internal/og2"
 	"log"
 	"net/http"
@@ -15,8 +16,17 @@ import (
 	"time"
 )
 
+type config struct {
+	VolumePath string `required:"true" split_words:"true" desc:"Path to volume mount"`
+}
+
 func main() {
-	db, err := sql.Open("sqlite3", "sessions.db")
+	var cfg config
+	if err := envconfig.Process("og2", &cfg); err != nil {
+		log.Panic(err)
+	}
+
+	db, err := sql.Open("sqlite3", fmt.Sprintf("%s/sessions.db", cfg.VolumePath))
 	if err != nil {
 		log.Panic(err)
 	}
