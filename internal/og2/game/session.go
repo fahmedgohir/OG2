@@ -2,6 +2,16 @@ package game
 
 import "time"
 
+type User struct {
+	Name string `json:"name"`
+}
+
+type Resources struct {
+	Iron   int `json:"iron"`
+	Copper int `json:"copper"`
+	Gold   int `json:"gold"`
+}
+
 type Session struct {
 	User        User      `json:"user"`
 	Resources   Resources `json:"resources"`
