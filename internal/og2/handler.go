@@ -21,6 +21,7 @@ func NewHandler(sessions Sessions) *Handler {
 
 func (h *Handler) Route(router *chi.Mux) {
 	router.Post("/user", h.HandleUser())
+	router.Get("/user", h.HandleSession())
 }
 
 func (h *Handler) HandleUser() http.HandlerFunc {
@@ -33,6 +34,24 @@ func (h *Handler) HandleUser() http.HandlerFunc {
 
 		err := h.sessions.Create(user)
 		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session, err := h.sessions.Get(user)
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		render.JSON(rw, r, session)
+	}
+}
+
+func (h *Handler) HandleSession() http.HandlerFunc {
+	return func(rw http.ResponseWriter, r *http.Request) {
+		var user game.User
+		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}

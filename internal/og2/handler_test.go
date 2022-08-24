@@ -26,7 +26,8 @@ func TestPostUser(t *testing.T) {
 			},
 			expected: game.User{
 				Name: "john doe",
-			}},
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
