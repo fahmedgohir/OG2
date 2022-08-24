@@ -21,7 +21,7 @@ func NewHandler(sessions Sessions) *Handler {
 
 func (h *Handler) Route(router *chi.Mux) {
 	router.Post("/user", h.HandleUser())
-	router.Get("/user", h.HandleSession())
+	router.Get("/dashboard", h.HandleSession())
 }
 
 func (h *Handler) HandleUser() http.HandlerFunc {
