@@ -9,11 +9,6 @@ type User struct {
 	Name string `json:"name"`
 }
 
-type Upgrade struct {
-	User    User     `json:"user"`
-	Factory Resource `json:"factory"`
-}
-
 type Resources struct {
 	Iron   int `json:"iron"`
 	Copper int `json:"copper"`

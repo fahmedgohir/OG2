@@ -24,21 +24,25 @@ func (h *Handler) Route(router *chi.Mux) {
 	router.Post("/upgrade", h.HandleUpgrade())
 }
 
+type UserRequest struct {
+	User game.User `json:"user"`
+}
+
 func (h *Handler) HandleUser() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var user game.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		var req UserRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		err := h.sessions.Create(user)
+		err := h.sessions.Create(req.User)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session, err := h.sessions.Get(user)
+		session, err := h.sessions.Get(req.User)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
@@ -46,17 +50,21 @@ func (h *Handler) HandleUser() http.HandlerFunc {
 
 		render.JSON(rw, r, session)
 	}
+}
+
+type SessionRequest struct {
+	User game.User `json:"user"`
 }
 
 func (h *Handler) HandleSession() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var user game.User
-		if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		var req SessionRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session, err := h.sessions.Get(user)
+		session, err := h.sessions.Get(req.User)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
@@ -66,21 +74,26 @@ func (h *Handler) HandleSession() http.HandlerFunc {
 	}
 }
 
+type UpgradeRequest struct {
+	User    game.User     `json:"user"`
+	Factory game.Resource `json:"factory"`
+}
+
 func (h *Handler) HandleUpgrade() http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		var upgrade game.Upgrade
-		if err := json.NewDecoder(r.Body).Decode(&upgrade); err != nil {
+		var req UpgradeRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session, err := h.sessions.Get(upgrade.User)
+		session, err := h.sessions.Get(req.User)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		session, err = session.Upgrade(upgrade.Factory)
+		session, err = session.Upgrade(req.Factory)
 		if err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return

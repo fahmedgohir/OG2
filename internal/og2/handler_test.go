@@ -41,7 +41,11 @@ func TestPostUser(t *testing.T) {
 		sessions, err := og2.NewSessions(db)
 		require.NoError(err)
 
-		b, err := json.Marshal(testCase.input)
+		input := og2.UserRequest{
+			User: testCase.input,
+		}
+
+		b, err := json.Marshal(input)
 		require.NoError(err)
 
 		req := httptest.NewRequest(http.MethodPost, "/user", bytes.NewBuffer(b))
