@@ -168,8 +168,8 @@ func (s *sessions) Set(session game.Session) error {
 
 	query := `
 		UPDATE sessions
-		SET state = $2
-		WHERE name = $1
+		SET state = $1
+		WHERE name = $2
 	`
 
 	b, err := game.Marshal(session)
@@ -177,7 +177,7 @@ func (s *sessions) Set(session game.Session) error {
 		return err
 	}
 
-	res, err := s.db.Exec(query, session.User.Name, string(b))
+	res, err := s.db.Exec(query, string(b), session.User.Name)
 	if err != nil {
 		return err
 	}
