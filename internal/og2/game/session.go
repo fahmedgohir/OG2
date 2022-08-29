@@ -2,7 +2,6 @@ package game
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
@@ -59,26 +58,38 @@ func Unmarshal(b []byte) (Session, error) {
 	return session, nil
 }
 
-func (s Session) Update() bool {
+func (s Session) Update() (Session, bool) {
 	currentTime := time.Now().Unix()
-	elapsed := int(currentTime - s.LastUpdated)
+	elapsed := currentTime - s.LastUpdated
 	if elapsed <= 0 {
-		return false
+		return s, false
 	}
 
-	newIron := elapsed * LevelToProduction(s.Factories.IronFactory.Level, Resource_Iron)
-	newCopper := elapsed * LevelToProduction(s.Factories.CopperFactory.Level, Resource_Copper)
-	newGold := elapsed * LevelToProduction(s.Factories.GoldFactory.Level, Resource_Gold)
+	newIron := elapsed * IronProductionRates[s.Factories.IronFactory.Level]
+	newCopper := elapsed * CopperProductionRates[s.Factories.CopperFactory.Level]
+	newGold := elapsed * GoldProductionRates[s.Factories.GoldFactory.Level]
 
-	s.Resources.Iron += newIron
-	s.Resources.Copper += newCopper
-	s.Resources.Gold += newGold
+	s.Resources.Iron += int(newIron)
+	s.Resources.Copper += int(newCopper)
+	s.Resources.Gold += int(newGold)
 
 	s.LastUpdated = currentTime
-	return true
+	return s, true
 }
 
-func (s Session) Upgrade(resource Resource) error {
-	// Upgrade logic goes here
-	return fmt.Errorf("upgrades not implemented")
+func (s Session) Upgrade(resource Resource) (Session, error) {
+	var err error
+	switch resource {
+	case Resource_Iron:
+		s.Factories.IronFactory, err = s.Factories.IronFactory.Upgrade(s.Resources)
+		break
+	case Resource_Copper:
+		s.Factories.CopperFactory, err = s.Factories.CopperFactory.Upgrade(s.Resources)
+		break
+	case Resource_Gold:
+		s.Factories.GoldFactory, err = s.Factories.GoldFactory.Upgrade(s.Resources)
+		break
+	}
+
+	return s, err
 }

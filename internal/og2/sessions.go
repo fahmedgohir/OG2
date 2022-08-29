@@ -154,8 +154,8 @@ func (s *sessions) update() error {
 	s.mutex.RUnlock()
 
 	for _, session := range sessions {
-		if session.Update() {
-			s.Set(session)
+		if updated, ok := session.Update(); ok {
+			s.Set(updated)
 		}
 	}
 
