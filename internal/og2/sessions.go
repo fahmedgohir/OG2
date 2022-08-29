@@ -29,7 +29,6 @@ type Sessions interface {
 	Create(user game.User) error
 	Get(user game.User) (game.Session, error)
 	Set(session game.Session) error
-	Update() error
 	Close()
 }
 
@@ -42,13 +41,7 @@ type sessions struct {
 func NewSessions(db *sql.DB) (Sessions, error) {
 	query := `CREATE TABLE IF NOT EXISTS sessions(
 			name TEXT PRIMARY KEY,
-			iron INT,
-			copper INT,
-			gold INT,
-			iron_level INT,
-			copper_level INT,
-			gold_level INT,
-			last_updated BIGINT
+			state TEXT
 		);`
 
 	_, err := db.Exec(query)
@@ -67,7 +60,7 @@ func (s *sessions) Start() {
 		for {
 			select {
 			case <-ticker.C:
-				s.Update()
+				s.update()
 			case <-s.quit:
 				ticker.Stop()
 				return
@@ -84,20 +77,20 @@ func (s *sessions) Create(user game.User) error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
 
+	session := game.NewSession(user)
+	b, err := game.Marshal(session)
+	if err != nil {
+		return err
+	}
+
 	query := `
 		INSERT INTO sessions(
 			name,
-			iron,
-		    copper,
-			gold,
-			iron_level,
-		    copper_level,
-			gold_level,
-			last_updated
-		) values(?, ?, ?, ?, ?, ?, ?, ?);
+			state
+		) values(?, ?);
 	`
 
-	res, err := s.db.Exec(query, user.Name, 0, 0, 0, 1, 1, 1, time.Now().Unix())
+	res, err := s.db.Exec(query, user.Name, string(b))
 	if err != nil {
 		return err
 	}
@@ -115,7 +108,7 @@ func (s *sessions) Get(user game.User) (game.Session, error) {
 	defer s.mutex.RUnlock()
 
 	query := `
-		SELECT name, iron, copper, gold, iron_level, copper_level, gold_level, last_updated FROM sessions
+		SELECT state FROM sessions
 		WHERE name = $1
 	`
 
@@ -124,37 +117,18 @@ func (s *sessions) Get(user game.User) (game.Session, error) {
 		return game.Session{}, ErrCouldNotFindSession
 	}
 
-	var name string
-	var iron, copper, gold int
-	var iron_level, copper_level, gold_level int
-	var last_updated int64
-
-	err := row.Scan(
-		&name,
-		&iron,
-		&copper,
-		&gold,
-		&iron_level,
-		&copper_level,
-		&gold_level,
-		&last_updated,
-	)
-
-	if err != nil {
+	var state string
+	if err := row.Scan(&state); err != nil {
 		return game.Session{}, err
 	}
 
-	return toSession(
-		name,
-		iron, copper, gold,
-		iron_level, copper_level, gold_level,
-		last_updated,
-	), nil
+	return game.Unmarshal([]byte(state))
 }
 
-func (s *sessions) Update() error {
+func (s *sessions) update() error {
+	s.mutex.RLock()
 	query := `
-		SELECT name, iron, copper, gold, iron_level, copper_level, gold_level, last_updated FROM sessions
+		SELECT state FROM sessions
 	`
 
 	rows, err := s.db.Query(query)
@@ -165,59 +139,45 @@ func (s *sessions) Update() error {
 
 	sessions := make([]game.Session, 0)
 	for rows.Next() {
-		var name string
-		var iron, copper, gold int
-		var iron_level, copper_level, gold_level int
-		var last_updated int64
+		var state string
+		if err := rows.Scan(&state); err != nil {
+			return err
+		}
 
-		err = rows.Scan(
-			&name,
-			&iron,
-			&copper,
-			&gold,
-			&iron_level,
-			&copper_level,
-			&gold_level,
-			&last_updated,
-		)
+		session, err := game.Unmarshal([]byte(state))
 		if err != nil {
 			return err
 		}
 
-		sessions = append(sessions, toSession(
-			name,
-			iron, copper, gold,
-			iron_level, copper_level, gold_level,
-			last_updated,
-		))
+		sessions = append(sessions, session)
 	}
+	s.mutex.RUnlock()
 
 	for _, session := range sessions {
-		updated := session.Update()
-		s.Set(updated)
+		if session.Update() {
+			s.Set(session)
+		}
 	}
 
 	return nil
 }
 
 func (s *sessions) Set(session game.Session) error {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+
 	query := `
 		UPDATE sessions
-		SET name = $1, iron = $2, copper = $3, gold = $4, iron_level = $5, copper_level = $6, gold_level = $7, last_updated = $8
+		SET state = $2
 		WHERE name = $1
 	`
 
-	res, err := s.db.Exec(
-		query,
-		session.User.Name,
-		session.Resources.Iron,
-		session.Resources.Copper,
-		session.Resources.Gold,
-		session.Factories.IronFactory.Level,
-		session.Factories.CopperFactory.Level,
-		session.Factories.GoldFactory.Level,
-		session.LastUpdated,
-	)
+	b, err := game.Marshal(session)
+	if err != nil {
+		return err
+	}
+
+	res, err := s.db.Exec(query, session.User.Name, string(b))
 	if err != nil {
 		return err
 	}
@@ -228,28 +188,4 @@ func (s *sessions) Set(session game.Session) error {
 	}
 
 	return nil
-}
-
-func toSession(
-	name string,
-	iron, copper, gold int,
-	iron_level, copper_level, gold_level int,
-	last_updated int64,
-) game.Session {
-	return game.Session{
-		User: game.User{
-			Name: name,
-		},
-		Resources: game.Resources{
-			Iron:   iron,
-			Copper: copper,
-			Gold:   gold,
-		},
-		Factories: game.Factories{
-			IronFactory:   game.NewFactory(iron_level, game.Resource_Iron),
-			CopperFactory: game.NewFactory(copper_level, game.Resource_Copper),
-			GoldFactory:   game.NewFactory(gold_level, game.Resource_Gold),
-		},
-		LastUpdated: last_updated,
-	}
 }

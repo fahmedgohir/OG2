@@ -93,8 +93,7 @@ func (h *Handler) HandleUpgrade() http.HandlerFunc {
 			return
 		}
 
-		session, err = session.Upgrade(req.Factory)
-		if err != nil {
+		if err := session.Upgrade(req.Factory); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}

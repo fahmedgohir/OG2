@@ -20,12 +20,6 @@ func NewFactory(level int, resource Resource) Factory {
 	}
 }
 
-type Factories struct {
-	IronFactory   Factory `json:"iron_factory"`
-	CopperFactory Factory `json:"copper_factory"`
-	GoldFactory   Factory `json:"gold_Factory"`
-}
-
 func LevelToProduction(level int, resource Resource) int {
 	switch resource {
 	case Resource_Iron:

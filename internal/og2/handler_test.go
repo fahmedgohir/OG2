@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"hunter.io/og2/internal/og2"
 	"hunter.io/og2/internal/og2/game"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -45,19 +46,20 @@ func TestPostUser(t *testing.T) {
 			User: testCase.input,
 		}
 
-		b, err := json.Marshal(input)
+		b1, err := json.Marshal(input)
 		require.NoError(err)
 
-		req := httptest.NewRequest(http.MethodPost, "/user", bytes.NewBuffer(b))
+		req := httptest.NewRequest(http.MethodPost, "/user", bytes.NewBuffer(b1))
 		w := httptest.NewRecorder()
 
 		h := og2.NewHandler(sessions).HandleUser()
 		h.ServeHTTP(w, req)
 
 		resp := w.Result()
+		b2, err := ioutil.ReadAll(resp.Body)
+		require.NoError(err)
 
-		var actual game.Session
-		err = json.NewDecoder(resp.Body).Decode(&actual)
+		actual, err := game.Unmarshal(b2)
 		require.NoError(err)
 
 		assert.Equal(testCase.expected, actual.User)
